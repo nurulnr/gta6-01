@@ -1,49 +1,38 @@
-// SOLMARA — the entry program for make.fun's gta6-01 bounty.
+// Coral Bay's hand-in program (Node 22, standard library only). It takes the
+// game as it stands in this repository — game/ (the playable static files) and
+// screenshots/ (four real renders) — copies both into the output directory and
+// writes /output/dossier.json with the kit's buildDossier, the summary the
+// judge reads. Run it twice and the bytes come out identical.
 //
-// What this program hands in, and how: the game is plain static files under
-// game/ (index.html, its ES modules, the vendored three.js build) and the
-// four screenshots under screenshots/, each a real render of the game running
-// in a desktop browser. This program copies both trees into the output
-// directory and writes dossier.json there with buildDossier from the kit's
-// vendored library (vendor/makefun-game.ts), the summary the judge reads.
-//
-// It runs on Node 22 with the standard library only, and the grader runs it
-// twice: both runs must write identical bytes. So nothing here varies — no
-// timestamps, no randomness, no network, just deterministic copies.
-//
-// Outside the grader, MAKEFUN_OUTPUT_DIR stands in for /output:
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// Local check:  mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// Play it:      node serve.ts, then open http://localhost:8080
 
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
 
-const repoDir = fileURLToPath(new URL('.', import.meta.url));
+const repoRoot = fileURLToPath(new URL('.', import.meta.url));
 const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-// Copy one tree, making the target first. Used for game/ and screenshots/.
-function mirror(sourceDir, targetDir) {
-  mkdirSync(targetDir, { recursive: true });
-  cpSync(sourceDir, targetDir, { recursive: true });
+mkdirSync(outDir, { recursive: true });
+cpSync(join(repoRoot, 'game'), join(outDir, 'game'), { recursive: true });
+mkdirSync(join(outDir, 'screenshots'), { recursive: true });
+if (existsSync(join(repoRoot, 'screenshots'))) {
+  cpSync(join(repoRoot, 'screenshots'), join(outDir, 'screenshots'), { recursive: true });
 }
 
-// The game: every static file the browser loads, three.js included.
-mirror(join(repoDir, 'game'), join(outDir, 'game'));
-
-// The screenshots, when they are present (they always are in this entry).
-const shotsDir = join(repoDir, 'screenshots');
-if (existsSync(shotsDir)) mirror(shotsDir, join(outDir, 'screenshots'));
-
-// The dossier, built by the kit's own library from exactly what was copied.
-// The caps come from the kit's reference/gate.json: dossier text capped at
-// 160 KiB, at most 4 screenshots of at most 256 KiB each, game/ at most 993
-// files and 48 MiB in all, every game path at most 1000 bytes.
-const dossier = buildDossier(outDir, {
-  text_max_bytes: 163840,
-  screenshots: { max: 4, max_bytes: 262144 },
-  game_max_files: 993,
-  game_max_bytes: 50331648,
-  game_path_max_bytes: 1000,
-});
-writeFileSync(join(outDir, 'dossier.json'), dossier);
+// The scorer's caps, from the kit's reference/gate.json: the text cap shapes
+// the dossier's bytes; the rest refuse an entry the scorer would refuse —
+// more than four screenshots or one over 256 KiB, more than 993 files in
+// game/ or 48 MiB of them, or a game/ path over 1,000 bytes.
+writeFileSync(
+  join(outDir, 'dossier.json'),
+  buildDossier(outDir, {
+    text_max_bytes: 163840,
+    screenshots: { max: 4, max_bytes: 262144 },
+    game_max_files: 993,
+    game_max_bytes: 50331648,
+    game_path_max_bytes: 1000,
+  }),
+);

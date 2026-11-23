@@ -1,1 +1,1 @@
-[{"name":"1-cover.jpg","query":"?shot=cover","seed":20261123},{"name":"2-chase.jpg","query":"?shot=chase","seed":20261123},{"name":"3-mission.jpg","query":"?shot=mission","seed":20261123},{"name":"4-beach.jpg","query":"?shot=beach","seed":20261123}]
+[{"name":"1-cover.jpg","query":"?shot=cruise&seed=20261123"},{"name":"2-chase.jpg","query":"?shot=chase&seed=20261123"},{"name":"3-mission.jpg","query":"?shot=mission&seed=20261123"},{"name":"4-beach.jpg","query":"?shot=brawl&seed=20261123"}]
