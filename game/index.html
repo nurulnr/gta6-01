@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLMARA — an open-world crime story</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1a1208; font-family: "Trebuchet MS", Verdana, sans-serif; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #hud { position: fixed; inset: 0; pointer-events: none; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.8); user-select: none; }
+  .panel { background: rgba(10,10,16,.55); border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 6px 10px; }
+  #topleft { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; }
+  #cash { font-size: 22px; font-weight: bold; color: #7dff9a; }
+  #healthbar { width: 180px; height: 12px; background: rgba(0,0,0,.6); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,.35); }
+  #healthfill { height: 100%; width: 100%; background: linear-gradient(90deg,#ff5a4e,#ffb14e); }
+  #topright { position: absolute; top: 12px; right: 12px; text-align: right; }
+  #stars { font-size: 26px; letter-spacing: 4px; color: #ffd23e; }
+  #stars .off { color: rgba(255,255,255,.25); }
+  #clock { font-size: 18px; font-weight: bold; }
+  #objective { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); max-width: 520px; text-align: center; font-size: 15px; }
+  #objective b { color: #ffd23e; }
+  #minimapWrap { position: absolute; left: 12px; bottom: 12px; }
+  #minimap { width: 200px; height: 200px; border-radius: 8px; border: 2px solid rgba(255,255,255,.35); background: #0c1420; display: block; }
+  #speedo { position: absolute; right: 16px; bottom: 14px; font-size: 30px; font-weight: bold; text-align: right; }
+  #speedo small { font-size: 13px; color: #ffd23e; display: block; }
+  #help { position: absolute; right: 12px; bottom: 92px; font-size: 12px; line-height: 1.5; text-align: right; opacity: .9; }
+  #feed { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); text-align: center; font-size: 16px; }
+  #feed div { margin-top: 4px; }
+  #banner { position: absolute; top: 34%; left: 50%; transform: translate(-50%,-50%); font-size: 44px; font-weight: bold; color: #ffd23e; letter-spacing: 2px; opacity: 0; transition: opacity .3s; text-align: center; }
+  #banner small { display: block; font-size: 18px; color: #fff; letter-spacing: 0; }
+  .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: radial-gradient(ellipse at center, rgba(40,16,60,.55), rgba(5,5,12,.88)); color: #fff; text-align: center; z-index: 10; }
+  .overlay h1 { font-size: 64px; margin: 0; letter-spacing: 6px; color: #ffd23e; text-shadow: 0 0 24px rgba(255,180,40,.6), 0 3px 0 #7a2d00; }
+  .overlay h2 { font-weight: normal; font-size: 19px; margin: 6px 0 22px; color: #ffe9b0; }
+  .overlay button { pointer-events: auto; cursor: pointer; font-size: 18px; font-family: inherit; margin: 6px; padding: 12px 28px; border-radius: 8px; border: 2px solid #ffd23e; background: #2a1608; color: #ffd23e; }
+  .overlay button:hover { background: #ffd23e; color: #2a1608; }
+  .overlay p { max-width: 560px; line-height: 1.6; font-size: 15px; color: #ddd; }
+  .overlay .keys { font-size: 13px; color: #bbb; line-height: 1.8; }
+  #menu .tag { color: #7dff9a; font-size: 13px; letter-spacing: 3px; }
+  .hidden { display: none !important; }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="SOLMARA: an open-world crime game. Drive, walk, take missions and outrun the police."></canvas>
+<div id="hud">
+  <div id="topleft">
+    <div class="panel"><span id="cash">$0</span><div id="healthbar"><div id="healthfill"></div></div></div>
+    <div class="panel" id="rep">REP 0 &middot; <span id="missionCount">0/6 missions</span></div>
+  </div>
+  <div id="topright">
+    <div id="stars"><span>&#9733;</span><span class="off">&#9733;</span><span class="off">&#9733;</span><span class="off">&#9733;</span><span class="off">&#9733;</span></div>
+    <div id="clock">18:42</div>
+    <div id="radio">SOLMARA FM &middot; Sunset Drive</div>
+  </div>
+  <div id="objective" class="panel hidden"><b id="objTitle"></b><br><span id="objText"></span></div>
+  <div id="minimapWrap"><canvas id="minimap" width="200" height="200"></canvas></div>
+  <div id="speedo" class="hidden"><span id="speed">0</span><small id="gear">km/h &middot; on foot</small></div>
+  <div id="help" class="panel">WASD move / drive &middot; SHIFT run / boost<br>E enter car &middot; F punch &middot; SPACE handbrake<br>M missions &middot; P pause &middot; R restart &middot; U mute</div>
+  <div id="feed"></div>
+  <div id="banner"></div>
+</div>
+<div id="menu" class="overlay">
+  <div class="tag">A SUN-SOAKED OPEN-WORLD CRIME STORY</div>
+  <h1>SOLMARA</h1>
+  <h2>Mara Solis came home broke. The city owes her. Take it back — one job at a time.</h2>
+  <p>Explore Solmara Bay on foot and by car. Steal rides, dodge the Solmara PD, run six story
+  missions for Rico, Tessa and Vega, and build your rep from street nobody to the name every
+  fixer in town calls first.</p>
+  <button id="btnNew">New game</button>
+  <button id="btnContinue" class="hidden">Continue</button>
+  <button id="btnHow">How to play</button>
+  <div id="howto" class="keys hidden" style="margin-top:14px">
+    W A S D — walk / drive &nbsp;·&nbsp; SHIFT — run / boost &nbsp;·&nbsp; MOUSE — look around<br>
+    E — get in / out of a car &nbsp;·&nbsp; F — punch &nbsp;·&nbsp; SPACE — handbrake<br>
+    M — mission list &nbsp;·&nbsp; P — pause &nbsp;·&nbsp; R — restart &nbsp;·&nbsp; U — mute sound<br>
+    Causing trouble raises your wanted stars. Lose the cops to cool off.<br>
+    Gold markers start missions. Green cash stashes are hidden around the city.
+  </div>
+</div>
+<div id="pauseMenu" class="overlay hidden">
+  <h1 style="font-size:44px">PAUSED</h1>
+  <p>Solmara waits for no one. Except right now.</p>
+  <button id="btnResume">Resume</button>
+  <button id="btnQuit">Save &amp; quit to menu</button>
+</div>
+<div id="endScreen" class="overlay hidden">
+  <h1 id="endTitle" style="font-size:48px">BUSTED</h1>
+  <p id="endText"></p>
+  <button id="btnRetry">Back on the streets</button>
+  <button id="btnMenu2">Main menu</button>
+</div>
+<div id="missionList" class="overlay hidden">
+  <h1 style="font-size:36px">MISSIONS</h1>
+  <div id="missionRows" style="text-align:left;max-width:640px"></div>
+  <button id="btnCloseMissions">Close</button>
+</div>
+<p id="status" role="status" aria-live="polite"></p>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.min.js" } }
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
