@@ -17,6 +17,7 @@
   #stars { font-size: 26px; letter-spacing: 4px; color: #ffd23e; }
   #stars .off { color: rgba(255,255,255,.25); }
   #clock { font-size: 18px; font-weight: bold; }
+  #radio { font-size: 13px; color: #ffd98a; }
   #objective { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); max-width: 520px; text-align: center; font-size: 15px; }
   #objective b { color: #ffd23e; }
   #minimapWrap { position: absolute; left: 12px; bottom: 12px; }
@@ -26,10 +27,10 @@
   #help { position: absolute; right: 12px; bottom: 92px; font-size: 12px; line-height: 1.5; text-align: right; opacity: .9; }
   #feed { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); text-align: center; font-size: 16px; }
   #feed div { margin-top: 4px; }
-  #banner { position: absolute; top: 34%; left: 50%; transform: translate(-50%,-50%); font-size: 44px; font-weight: bold; color: #ffd23e; letter-spacing: 2px; opacity: 0; transition: opacity .3s; text-align: center; }
+  #banner { position: absolute; top: 30%; left: 50%; transform: translate(-50%,-50%); font-size: 40px; font-weight: bold; color: #ffd23e; letter-spacing: 2px; opacity: 0; transition: opacity .3s; text-align: center; }
   #banner small { display: block; font-size: 18px; color: #fff; letter-spacing: 0; }
   .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: radial-gradient(ellipse at center, rgba(40,16,60,.55), rgba(5,5,12,.88)); color: #fff; text-align: center; z-index: 10; }
-  .overlay h1 { font-size: 64px; margin: 0; letter-spacing: 6px; color: #ffd23e; text-shadow: 0 0 24px rgba(255,180,40,.6), 0 3px 0 #7a2d00; }
+  .overlay h1 { font-size: 64px; margin: 0; letter-spacing: 8px; color: #ffd23e; text-shadow: 0 0 24px rgba(255,180,40,.6), 0 3px 0 #7a2d00; }
   .overlay h2 { font-weight: normal; font-size: 19px; margin: 6px 0 22px; color: #ffe9b0; }
   .overlay button { pointer-events: auto; cursor: pointer; font-size: 18px; font-family: inherit; margin: 6px; padding: 12px 28px; border-radius: 8px; border: 2px solid #ffd23e; background: #2a1608; color: #ffd23e; }
   .overlay button:hover { background: #ffd23e; color: #2a1608; }
@@ -55,14 +56,14 @@
   <div id="objective" class="panel hidden"><b id="objTitle"></b><br><span id="objText"></span></div>
   <div id="minimapWrap"><canvas id="minimap" width="200" height="200"></canvas></div>
   <div id="speedo" class="hidden"><span id="speed">0</span><small id="gear">km/h &middot; on foot</small></div>
-  <div id="help" class="panel">WASD move / drive &middot; SHIFT run / boost<br>E enter car &middot; F punch &middot; SPACE handbrake<br>M missions &middot; P pause &middot; R restart &middot; U mute</div>
+  <div id="help" class="panel">WASD move / drive &middot; SHIFT run / boost<br>E enter car &middot; F punch &middot; SPACE handbrake &middot; H honk<br>M missions &middot; P pause &middot; R restart &middot; U mute</div>
   <div id="feed"></div>
   <div id="banner"></div>
 </div>
 <div id="menu" class="overlay">
   <div class="tag">A SUN-SOAKED OPEN-WORLD CRIME STORY</div>
   <h1>SOLMARA</h1>
-  <h2>Mara Solis came home broke. The city owes her. Take it back — one job at a time.</h2>
+  <h2>Mara Solis came home broke, and the city owes her. Take it back — one job at a time.</h2>
   <p>Explore Solmara Bay on foot and by car. Steal rides, dodge the Solmara PD, run six story
   missions for Rico, Tessa and Vega, and build your rep from street nobody to the name every
   fixer in town calls first.</p>

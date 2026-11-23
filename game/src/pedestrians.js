@@ -1,6 +1,7 @@
-// Pedestrians: ordinary Solmara residents strolling the sidewalks. They walk a
-// road edge, turn at intersections, and run away screaming (well: running) when
-// a car bears down on them or a punch lands nearby. Punching one is a crime.
+// Pedestrians: ordinary Solmara residents strolling the sidewalks. They walk
+// a road edge, turn at intersections, and run away when a car bears down on
+// them or a punch lands nearby. Punching one down is a crime — the police
+// notice. Missions can spawn extra peds at a place and count the ones down.
 import * as THREE from 'three';
 import { makeRng } from './random.js';
 import { makePedMesh } from './player.js';
@@ -29,14 +30,18 @@ export class Pedestrians {
       pos: mesh.position,
       heading: 0,
       speed: rng.range(1.1, 1.9),
-      vertical, road, side,
+      vertical,
+      road,
+      side,
       dir: rng.chance(0.5) ? 1 : -1,
       state: 'walk', // walk | flee | down
       timer: 0,
       walkPhase: rng.range(0, 6),
     };
     ped.pos.set(x ?? (vertical ? road + side : along), 0, z ?? (vertical ? along : road + side));
-    ped.heading = vertical ? (ped.dir > 0 ? 0 : Math.PI) : (ped.dir > 0 ? Math.PI / 2 : -Math.PI / 2);
+    ped.heading = vertical
+      ? (ped.dir > 0 ? 0 : Math.PI)
+      : (ped.dir > 0 ? Math.PI / 2 : -Math.PI / 2);
     mesh.position.copy(ped.pos);
     mesh.rotation.y = ped.heading;
     this.scene.add(mesh);
@@ -49,23 +54,23 @@ export class Pedestrians {
       if (ped.state === 'down') {
         ped.timer -= dt;
         if (ped.timer <= 0) {
-          // gets up, dusts off, walks away
+          // Gets up, dusts off, walks away.
           ped.state = 'walk';
           ped.mesh.rotation.x = 0;
           ped.mesh.position.y = 0;
         }
         continue;
       }
-      // flee from a fast car or a nearby brawl
+      // A fast car closing in, or a brawl nearby, sends them running.
       const dPlayer = playerPos ? Math.hypot(ped.pos.x - playerPos.x, ped.pos.z - playerPos.z) : 99;
       if (ped.state === 'walk' && dPlayer < 6 && playerSpeed > 8) {
-        ped.state = 'flee'; ped.timer = 2.5;
+        ped.state = 'flee';
+        ped.timer = 2.5;
       }
       const speed = ped.state === 'flee' ? 5.5 : ped.speed;
       if (ped.state === 'flee') {
         ped.timer -= dt;
         if (ped.timer <= 0) ped.state = 'walk';
-        // run away from the player
         const away = Math.atan2(ped.pos.x - playerPos.x, ped.pos.z - playerPos.z);
         ped.heading = away;
         ped.pos.x += Math.sin(away) * speed * dt;
@@ -74,10 +79,15 @@ export class Pedestrians {
         if (ped.vertical) ped.pos.z += ped.dir * speed * dt;
         else ped.pos.x += ped.dir * speed * dt;
         const along = ped.vertical ? ped.pos.z : ped.pos.x;
-        if (Math.abs(along) > 248) { ped.dir *= -1; }
-        ped.heading = ped.vertical ? (ped.dir > 0 ? 0 : Math.PI) : (ped.dir > 0 ? Math.PI / 2 : -Math.PI / 2);
-        // small chance to turn onto a cross street at an intersection
-        const nearest = ROAD_COORDS.reduce((a, b) => Math.abs(b - along) < Math.abs(a - along) ? b : a, ROAD_COORDS[0]);
+        if (Math.abs(along) > 248) ped.dir *= -1;
+        ped.heading = ped.vertical
+          ? (ped.dir > 0 ? 0 : Math.PI)
+          : (ped.dir > 0 ? Math.PI / 2 : -Math.PI / 2);
+        // A small chance to turn onto a cross street at an intersection.
+        const nearest = ROAD_COORDS.reduce(
+          (a, b) => (Math.abs(b - along) < Math.abs(a - along) ? b : a),
+          ROAD_COORDS[0],
+        );
         if (Math.abs(along - nearest) < 0.5 && this.rng.chance(0.015)) {
           ped.vertical = !ped.vertical;
           ped.road = nearest;
@@ -89,20 +99,27 @@ export class Pedestrians {
       ped.walkPhase += speed * dt * 3.2;
       const swing = Math.sin(ped.walkPhase) * 0.5;
       const u = ped.mesh.userData;
-      u.legL.rotation.x = swing; u.legR.rotation.x = -swing;
-      u.armL.rotation.x = -swing * 0.7; u.armR.rotation.x = swing * 0.7;
+      u.legL.rotation.x = swing;
+      u.legR.rotation.x = -swing;
+      u.armL.rotation.x = -swing * 0.7;
+      u.armR.rotation.x = swing * 0.7;
       ped.mesh.position.copy(ped.pos);
       ped.mesh.rotation.y = ped.heading;
     }
   }
 
-  // A punch at (x, z): the nearest ped within reach goes down. Returns the ped or null.
+  // A punch at (x, z): the nearest ped within reach goes down. Returns the
+  // ped that went down, or null when nobody was close enough.
   punchAt(x, z, reach) {
-    let best = null, bestD = reach;
+    let best = null;
+    let bestD = reach;
     for (const ped of this.list) {
       if (ped.state === 'down') continue;
       const d = Math.hypot(ped.pos.x - x, ped.pos.z - z);
-      if (d < bestD) { best = ped; bestD = d; }
+      if (d < bestD) {
+        best = ped;
+        bestD = d;
+      }
     }
     if (best) {
       best.state = 'down';
@@ -113,7 +130,7 @@ export class Pedestrians {
     return best;
   }
 
-  // How many peds are down inside a radius (mission 4 counts these).
+  // How many peds are down inside a radius — mission 4 counts these.
   downCountNear(x, z, radius) {
     let n = 0;
     for (const ped of this.list) {

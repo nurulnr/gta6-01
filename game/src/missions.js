@@ -1,47 +1,62 @@
-// Six story missions for Mara Solis, given by Rico (fixer), Tessa (mechanic)
-// and Vega (club owner). Missions unlock in order; each one is a small state
-// machine over the live game world, with a gold beacon marking the target.
+// Six story missions for Mara Solis, handed out by Rico the fixer, Tessa the
+// mechanic and Vega the club owner. Missions unlock in order; each one is a
+// small state machine over the live game world, with a gold beacon marking
+// where to go. A mission fails on its timer and can be retried from its gold
+// start marker; the last one pays out and leaves the city open for free roam.
 import * as THREE from 'three';
 
 export const MISSIONS = [
   {
-    id: 'first-wheels', title: 'First Wheels', giver: 'Rico',
+    id: 'first-wheels',
+    title: 'First Wheels',
+    giver: 'Rico',
     briefing: 'Rico needs wheels. Steal any car and bring it to his garage.',
     start: { x: -180, z: 180 },
     reward: 500,
   },
   {
-    id: 'sunset-run', title: 'Sunset Run', giver: 'Tessa',
+    id: 'sunset-run',
+    title: 'Sunset Run',
+    giver: 'Tessa',
     briefing: 'Tessa has a package for the pier. Drive it there in 90 seconds.',
     start: { x: -180, z: 180 },
     reward: 800,
   },
   {
-    id: 'heat-check', title: 'Heat Check', giver: 'Rico',
+    id: 'heat-check',
+    title: 'Heat Check',
+    giver: 'Rico',
     briefing: 'Rico wants to know if you can handle heat: get 3 stars, then lose them.',
     start: { x: -36, z: 108 },
     reward: 1000,
   },
   {
-    id: 'beach-brawl', title: 'Beach Brawl', giver: 'Vega',
+    id: 'beach-brawl',
+    title: 'Beach Brawl',
+    giver: 'Vega',
     briefing: 'Vega\u2019s thugs are hassling the beach bars. Put 4 of them down.',
     start: { x: 272, z: 60 },
     reward: 1200,
   },
   {
-    id: 'the-vip', title: 'The VIP', giver: 'Tessa',
+    id: 'the-vip',
+    title: 'The VIP',
+    giver: 'Tessa',
     briefing: 'A VIP is waiting at Hotel Miramar. Pick them up and drive them to Club Vega in 75 seconds.',
     start: { x: 180, z: -108 },
     reward: 1500,
   },
   {
-    id: 'big-score', title: 'The Big Score', giver: 'Vega',
+    id: 'big-score',
+    title: 'The Big Score',
+    giver: 'Vega',
     briefing: 'The Solmara Bank. Grab the cash, then lose a 4-star wanted level at the safehouse.',
     start: { x: -36, z: 108 },
     reward: 3000,
   },
 ];
 
+// The beacon: a beam of light, a spinning diamond and a ground ring.
 function makeBeacon(scene, color) {
   const g = new THREE.Group();
   const beam = new THREE.Mesh(
@@ -69,14 +84,15 @@ function makeBeacon(scene, color) {
 }
 
 export class MissionRunner {
-  // world: the live game state (player, police, pedestrians, landmarks, cash...).
-  // hooks: { feed(text), banner(title, sub), objective(title, text), addCash(n), setMarker(x,z,color)|clearMarker(), sound(name) }
+  // world: the live game state (player, police, pedestrians, landmarks, scene).
+  // hooks: feed(text), banner(title, sub), objective(title, text),
+  // addCash(n), sound(name).
   constructor(scene, world, hooks) {
     this.scene = scene;
     this.world = world;
     this.hooks = hooks;
-    this.current = 0;           // index into MISSIONS
-    this.state = 'idle';        // idle | active | done-all
+    this.current = 0; // index into MISSIONS
+    this.state = 'idle'; // idle | active | done-all
     this.step = 0;
     this.timer = 0;
     this.beacon = null;
@@ -85,9 +101,13 @@ export class MissionRunner {
     this.showStartBeacon();
   }
 
-  mission() { return MISSIONS[this.current] ?? null; }
+  mission() {
+    return MISSIONS[this.current] ?? null;
+  }
 
-  doneCount() { return this.current; }
+  doneCount() {
+    return this.current;
+  }
 
   showStartBeacon() {
     this.clearBeacon();
@@ -99,7 +119,10 @@ export class MissionRunner {
   }
 
   clearBeacon() {
-    if (this.beacon) { this.scene.remove(this.beacon); this.beacon = null; }
+    if (this.beacon) {
+      this.scene.remove(this.beacon);
+      this.beacon = null;
+    }
   }
 
   setTarget(x, z, color) {
@@ -121,21 +144,39 @@ export class MissionRunner {
     return true;
   }
 
+  // Point the player at the current step: its objective text and its beacon.
   enterStep() {
     const m = this.mission();
     const L = this.world.landmarks;
     switch (m.id) {
       case 'first-wheels':
-        if (this.step === 0) { this.hooks.objective(m.title, 'Steal any car (walk up and press E).'); this.clearBeacon(); }
-        else { this.hooks.objective(m.title, 'Drive it to Rico\u2019s garage.'); this.setTarget(L.garage.x, L.garage.z); }
+        if (this.step === 0) {
+          this.hooks.objective(m.title, 'Steal any car (walk up and press E).');
+          this.clearBeacon();
+        } else {
+          this.hooks.objective(m.title, 'Drive it to Rico\u2019s garage.');
+          this.setTarget(L.garage.x, L.garage.z);
+        }
         break;
       case 'sunset-run':
-        if (this.step === 0) { this.hooks.objective(m.title, 'Get in a car, then run the package to the pier.'); this.clearBeacon(); }
-        else { this.timer = 90; this.hooks.objective(m.title, 'Deliver to the pier — 90 seconds!'); this.setTarget(L.pier.x, L.pier.z); }
+        if (this.step === 0) {
+          this.hooks.objective(m.title, 'Get in a car, then run the package to the pier.');
+          this.clearBeacon();
+        } else {
+          this.timer = 90;
+          this.hooks.objective(m.title, 'Deliver to the pier — 90 seconds!');
+          this.setTarget(L.pier.x, L.pier.z);
+        }
         break;
       case 'heat-check':
-        if (this.step === 0) { this.hooks.objective(m.title, 'Cause some trouble — get to 3 wanted stars.'); this.clearBeacon(); }
-        else { this.timer = 120; this.hooks.objective(m.title, 'Now lose them. Stay clean until the heat dies down.'); this.clearBeacon(); }
+        if (this.step === 0) {
+          this.hooks.objective(m.title, 'Cause some trouble — get to 3 wanted stars.');
+          this.clearBeacon();
+        } else {
+          this.timer = 120;
+          this.hooks.objective(m.title, 'Now lose them. Stay clean until the heat dies down.');
+          this.clearBeacon();
+        }
         break;
       case 'beach-brawl':
         this.hooks.objective(m.title, 'Knock down 4 thugs at the beach. Walk up and press F.');
@@ -152,7 +193,8 @@ export class MissionRunner {
           this.hooks.objective(m.title, 'Walk up to the VIP outside Hotel Miramar.');
           this.setTarget(L.hotel.x, L.hotel.z);
           this.vipPed = this.world.pedestrians.spawnOne(L.hotel.x + 12, L.hotel.z + 6);
-          this.vipPed.state = 'walk'; this.vipPed.speed = 0;
+          this.vipPed.state = 'walk';
+          this.vipPed.speed = 0;
         } else {
           this.timer = 75;
           this.hooks.objective(m.title, 'Drive the VIP to Club Vega — 75 seconds, and drive smooth!');
@@ -160,9 +202,16 @@ export class MissionRunner {
         }
         break;
       case 'big-score':
-        if (this.step === 0) { this.hooks.objective(m.title, 'Drive to the Solmara Bank.'); this.setTarget(L.bank.x, L.bank.z); }
-        else if (this.step === 1) { this.hooks.objective(m.title, 'On foot — walk into the bank and grab the cash!'); this.setTarget(L.bank.x, L.bank.z, 0x7dff9a); }
-        else { this.hooks.objective(m.title, '4 stars! Lose the cops at the safehouse.'); this.setTarget(L.safehouse.x, L.safehouse.z, 0x7dff9a); }
+        if (this.step === 0) {
+          this.hooks.objective(m.title, 'Drive to the Solmara Bank.');
+          this.setTarget(L.bank.x, L.bank.z);
+        } else if (this.step === 1) {
+          this.hooks.objective(m.title, 'On foot — walk into the bank and grab the cash!');
+          this.setTarget(L.bank.x, L.bank.z, 0x7dff9a);
+        } else {
+          this.hooks.objective(m.title, '4 stars! Lose the cops at the safehouse.');
+          this.setTarget(L.safehouse.x, L.safehouse.z, 0x7dff9a);
+        }
         break;
     }
   }
@@ -197,7 +246,8 @@ export class MissionRunner {
     this.showStartBeacon();
   }
 
-  // Called every frame while a mission is active. Returns nothing; uses world state.
+  // Called every frame while a mission is active. The beacon diamond spins
+  // always; the step logic only runs on an active mission.
   update(dt) {
     if (this.beacon) {
       this.beacon.userData.diamond.rotation.y += dt * 2;
@@ -213,20 +263,35 @@ export class MissionRunner {
     const near = (x, z, r) => Math.hypot(px - x, pz - z) < r;
     if (this.timer > 0) {
       this.timer -= dt;
-      if (this.timer <= 0) { this.fail('Out of time.'); return; }
+      if (this.timer <= 0) {
+        this.fail('Out of time.');
+        return;
+      }
     }
     switch (m.id) {
       case 'first-wheels':
-        if (this.step === 0 && !p.onFoot) { this.step = 1; this.enterStep(); }
-        else if (this.step === 1 && !p.onFoot && near(L.garage.x, L.garage.z, 14)) this.complete();
+        if (this.step === 0 && !p.onFoot) {
+          this.step = 1;
+          this.enterStep();
+        } else if (this.step === 1 && !p.onFoot && near(L.garage.x, L.garage.z, 14)) {
+          this.complete();
+        }
         break;
       case 'sunset-run':
-        if (this.step === 0 && !p.onFoot) { this.step = 1; this.enterStep(); }
-        else if (this.step === 1 && !p.onFoot && near(L.pier.x, L.pier.z, 16)) this.complete();
+        if (this.step === 0 && !p.onFoot) {
+          this.step = 1;
+          this.enterStep();
+        } else if (this.step === 1 && !p.onFoot && near(L.pier.x, L.pier.z, 16)) {
+          this.complete();
+        }
         break;
       case 'heat-check':
-        if (this.step === 0 && w.police.stars >= 3) { this.step = 1; this.enterStep(); }
-        else if (this.step === 1 && w.police.stars === 0) this.complete();
+        if (this.step === 0 && w.police.stars >= 3) {
+          this.step = 1;
+          this.enterStep();
+        } else if (this.step === 1 && w.police.stars === 0) {
+          this.complete();
+        }
         break;
       case 'beach-brawl': {
         const down = w.pedestrians.downCountNear(L.beach.x, L.beach.z, 34);
@@ -235,22 +300,32 @@ export class MissionRunner {
         break;
       }
       case 'the-vip':
-        if (this.step === 0 && p.onFoot && this.vipPed && Math.hypot(p.pos.x - this.vipPed.pos.x, p.pos.z - this.vipPed.pos.z) < 3.5) {
+        if (this.step === 0 && p.onFoot && this.vipPed
+          && Math.hypot(p.pos.x - this.vipPed.pos.x, p.pos.z - this.vipPed.pos.z) < 3.5) {
+          // The VIP gets in — remove the walker from the street.
           w.pedestrians.list.splice(w.pedestrians.list.indexOf(this.vipPed), 1);
           w.scene.remove(this.vipPed.mesh);
           this.vipPed = null;
-          this.step = 1; this.enterStep();
+          this.step = 1;
+          this.enterStep();
           this.hooks.feed('VIP: "Drive, and don\u2019t scratch the paint."');
-        } else if (this.step === 1 && !p.onFoot && near(L.club.x, L.club.z, 14)) this.complete();
+        } else if (this.step === 1 && !p.onFoot && near(L.club.x, L.club.z, 14)) {
+          this.complete();
+        }
         break;
       case 'big-score':
-        if (this.step === 0 && !p.onFoot && near(L.bank.x, L.bank.z, 14)) { this.step = 1; this.enterStep(); }
-        else if (this.step === 1 && p.onFoot && near(L.bank.x, L.bank.z, 8)) {
-          this.step = 2; this.enterStep();
+        if (this.step === 0 && !p.onFoot && near(L.bank.x, L.bank.z, 14)) {
+          this.step = 1;
+          this.enterStep();
+        } else if (this.step === 1 && p.onFoot && near(L.bank.x, L.bank.z, 8)) {
+          this.step = 2;
+          this.enterStep();
           w.police.setStars(4);
           this.hooks.feed('ALARM! The whole Solmara PD is coming. Run!');
           this.hooks.sound('busted');
-        } else if (this.step === 2 && near(L.safehouse.x, L.safehouse.z, 14) && w.police.stars === 0) this.complete();
+        } else if (this.step === 2 && near(L.safehouse.x, L.safehouse.z, 14) && w.police.stars === 0) {
+          this.complete();
+        }
         break;
     }
   }
